@@ -42,11 +42,15 @@
     <div class="muted" id="status"></div>
 
     <section class="card">
-        <h2>Sentence Case Formatter</h2>
+        <h2>Text Formatter (Filename Router)</h2>
+        <p class="muted">
+            Name your file like <strong>notes_uppercase.txt</strong> or
+            <strong>notes_sentencecase.txt</strong>.
+        </p>
         <label for="fileInput">Upload a .txt file</label><br />
         <input id="fileInput" type="file" accept=".txt,text/plain" />
         <div style="margin-top: 12px;">
-            <button id="btnFormat" disabled>Convert to Sentence Case</button>
+            <button id="btnFormat" disabled>Format</button>
             <button id="btnCopy" disabled>Copy Output</button>
         </div>
         <p id="formatStatus" style="margin-top: 12px;"></p>

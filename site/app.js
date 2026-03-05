@@ -26,7 +26,7 @@ btn.addEventListener("click", async () => {
 });
 
 /* =========================================================
-   PART 2: Sentence Case Formatter (new feature)
+   PART 2: Filename Router Formatter
    ========================================================= */
 
 const fileInput = document.getElementById("fileInput");
@@ -76,15 +76,18 @@ if (fileInput && btnFormat && btnCopy && formatStatusEl && outputEl) {
     if (!selectedFile) return;
 
     btnFormat.disabled = true;
-    formatStatusEl.textContent = "Sending text to the API...";
+    formatStatusEl.textContent = "Sending to formatter API...";
 
     try {
       const text = await selectedFile.text();
 
-      const res = await fetch(`${FUNCTION_BASE_URL}/api/sentencecase`, {
+      const res = await fetch(`${FUNCTION_BASE_URL}/api/format`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({
+          filename: selectedFile.name,
+          text
+        })
       });
 
       if (!res.ok) {
@@ -96,7 +99,11 @@ if (fileInput && btnFormat && btnCopy && formatStatusEl && outputEl) {
       outputEl.value = data.result ?? "";
       btnCopy.disabled = outputEl.value.length === 0;
 
-      formatStatusEl.textContent = "Done.";
+      if (data.action) {
+        formatStatusEl.textContent = `Formatted using: ${data.action}`;
+      } else {
+        formatStatusEl.textContent = "Done.";
+      }
     } catch (err) {
       formatStatusEl.textContent = `Failed: ${err.message}`;
     } finally {
