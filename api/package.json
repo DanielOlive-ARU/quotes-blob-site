@@ -1,7 +1,7 @@
 {
-  "name": "",
+  "name": "quotesapp-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Azure Functions API for quotes and text formatting",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
