@@ -26,22 +26,23 @@ btn.addEventListener("click", async () => {
 });
 
 /* =========================================================
-   PART 2: Filename Router Formatter
+   PART 2: Routing formatter with file download
    ========================================================= */
 
 const fileInput = document.getElementById("fileInput");
 const btnFormat = document.getElementById("btnFormat");
-const btnCopy = document.getElementById("btnCopy");
+const btnDownload = document.getElementById("btnDownload");
 const formatStatusEl = document.getElementById("formatStatus");
 const outputEl = document.getElementById("output");
 
 let selectedFile = null;
+let downloadedFilename = "formatted.txt";
 
-if (fileInput && btnFormat && btnCopy && formatStatusEl && outputEl) {
+if (fileInput && btnFormat && btnDownload && formatStatusEl && outputEl) {
   fileInput.addEventListener("change", () => {
     selectedFile = fileInput.files?.[0] ?? null;
     outputEl.value = "";
-    btnCopy.disabled = true;
+    btnDownload.disabled = true;
 
     if (!selectedFile) {
       btnFormat.disabled = true;
@@ -76,7 +77,8 @@ if (fileInput && btnFormat && btnCopy && formatStatusEl && outputEl) {
     if (!selectedFile) return;
 
     btnFormat.disabled = true;
-    formatStatusEl.textContent = "Sending to formatter API...";
+    btnDownload.disabled = true;
+    formatStatusEl.textContent = "Sending text to the API...";
 
     try {
       const text = await selectedFile.text();
@@ -97,22 +99,30 @@ if (fileInput && btnFormat && btnCopy && formatStatusEl && outputEl) {
 
       const data = await res.json();
       outputEl.value = data.result ?? "";
-      btnCopy.disabled = outputEl.value.length === 0;
+      downloadedFilename = data.outputFilename ?? "formatted.txt";
+      btnDownload.disabled = outputEl.value.length === 0;
 
-      if (data.action) {
-        formatStatusEl.textContent = `Formatted using: ${data.action}`;
-      } else {
-        formatStatusEl.textContent = "Done.";
-      }
+      formatStatusEl.textContent = `Done. Route used: ${data.action}. You can now download the formatted file.`;
     } catch (err) {
+      outputEl.value = "";
+      btnDownload.disabled = true;
       formatStatusEl.textContent = `Failed: ${err.message}`;
     } finally {
       btnFormat.disabled = !selectedFile;
     }
   });
 
-  btnCopy.addEventListener("click", async () => {
-    await navigator.clipboard.writeText(outputEl.value);
-    formatStatusEl.textContent = "Copied output to clipboard.";
+  btnDownload.addEventListener("click", () => {
+    const blob = new Blob([outputEl.value], {
+      type: "text/plain;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = downloadedFilename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   });
 }
