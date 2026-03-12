@@ -102,7 +102,7 @@ if (fileInput && btnFormat && btnDownload && formatStatusEl && outputEl) {
       downloadedFilename = data.outputFilename ?? "formatted.txt";
       btnDownload.disabled = outputEl.value.length === 0;
 
-      formatStatusEl.textContent = `Done. Route used: ${data.action}. You can now download the formatted file.`;
+      formatStatusEl.textContent = `Done. Route used: ${data.action}. Stored as ${data.originalBlobName} and ${data.formattedBlobName}. You can now download the formatted file.`;
     } catch (err) {
       outputEl.value = "";
       btnDownload.disabled = true;
