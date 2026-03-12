@@ -1,11 +1,26 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { BlobServiceClient } from "@azure/storage-blob";
+import { 
+  BlobServiceClient, 
+  BlobSASPermissions, 
+  generateBlobSASQueryParameters,
+  StorageSharedKeyCredential 
+} from "@azure/storage-blob";
 import { FORMATTERS, FormatterAction } from "../formatters";
 
 type Body = {
   filename?: string;
   text?: string;
 };
+
+function generateTimestamp(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  return `${year}${month}${day}_${hour}${minute}`;
+}
 
 function detectAction(filename: string): FormatterAction | null {
   const lower = filename.toLowerCase();
@@ -111,14 +126,48 @@ export async function format(
 
     await containerClient.createIfNotExists();
 
+    // Extension 1: Add timestamp to blob names
+    const timestamp = generateTimestamp();
     const safeInputName = sanitiseFilename(filename);
     const safeOutputName = sanitiseFilename(outputFilename);
 
-    const originalBlobName = `originals/${safeInputName}`;
-    const formattedBlobName = `converted/${safeOutputName}`;
+    const originalBlobName = `originals/${timestamp}_${safeInputName}`;
+    const formattedBlobName = `converted/${timestamp}_${safeOutputName}`;
 
     await uploadTextBlob(containerClient, originalBlobName, text);
     await uploadTextBlob(containerClient, formattedBlobName, result);
+
+    // Extension 2: Generate SAS URL for direct blob download
+    let formattedBlobUrl = "";
+    
+    try {
+      // Parse connection string to extract account name and key for SAS generation
+      const accountMatch = storageConnection.match(/AccountName=([^;]+)/);
+      const keyMatch = storageConnection.match(/AccountKey=([^;]+)/);
+      
+      if (accountMatch && keyMatch) {
+        const accountName = accountMatch[1];
+        const accountKey = keyMatch[1];
+        const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+
+        // Generate SAS token valid for 1 hour
+        const sasToken = generateBlobSASQueryParameters(
+          {
+            containerName,
+            blobName: formattedBlobName,
+            permissions: BlobSASPermissions.parse("r"), // read-only
+            startsOn: new Date(),
+            expiresOn: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+          },
+          sharedKeyCredential
+        ).toString();
+
+        formattedBlobUrl = `${containerClient.url}/${formattedBlobName}?${sasToken}`;
+      }
+    } catch (sasError) {
+      context.warn("Failed to generate SAS URL", sasError);
+      // Continue without SAS URL if generation fails
+    }
 
     return {
       status: 200,
@@ -127,7 +176,8 @@ export async function format(
         outputFilename,
         result,
         originalBlobName,
-        formattedBlobName
+        formattedBlobName,
+        formattedBlobUrl
       }
     };
   } catch (err) {
