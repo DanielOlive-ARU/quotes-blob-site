@@ -2,19 +2,22 @@ name: Deploy site to Azure Blob Static Website
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "site/**"
       - ".github/workflows/deploy-site.yml"
-  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Upload site to $web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Debug account name
+        run: |
+          echo "Account: ${{ secrets.AZURE_STORAGE_ACCOUNT }}"
 
+
+      # Upload everything in /site to the $web container
       - name: Upload to $web
         uses: azure/CLI@v2
         with:
@@ -25,3 +28,4 @@ jobs:
               --destination '$web' \
               --source site \
               --overwrite true
+ 
