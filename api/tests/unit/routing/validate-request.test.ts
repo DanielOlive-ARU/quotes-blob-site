@@ -47,11 +47,11 @@ describe("validateRouteAndInput", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("rejects an unknown / not-yet-implemented route", () => {
+  it("rejects an unknown route string", () => {
     const result = validateRouteAndInput({
-      route: "csv_to_json",
-      filename: "x.csv",
-      text: "a,b\n1,2"
+      route: "nonexistent_route" as never,
+      filename: "x.json",
+      text: "anything"
     });
     expect(result.ok).toBe(false);
     expect(result.code).toBe("UNKNOWN_ROUTE");

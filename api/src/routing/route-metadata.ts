@@ -1,8 +1,14 @@
+import { formToJson } from "../converters/form-to-json";
+import { jsonToKeyvalue } from "../converters/json-to-keyvalue";
 import { jsonToText } from "../converters/json-to-text";
+import { listToJsonArray } from "../converters/list-to-json-array";
 import type { RouteDefinition, RouteKey } from "./route-types";
 
 export const routeRegistry: Partial<Record<RouteKey, RouteDefinition>> = {
-  json_to_text: jsonToText
+  json_to_text: jsonToText,
+  list_to_json_array: listToJsonArray,
+  form_to_json: formToJson,
+  json_to_keyvalue: jsonToKeyvalue
 };
 
 export function isRouteImplemented(key: string): key is RouteKey {
