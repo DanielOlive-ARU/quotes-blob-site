@@ -7,6 +7,7 @@
 | Unit tests | Vitest | Each converter's `validate` and `convert` functions, routing helpers, utilities | `cd api && npm test` |
 | Integration tests | Vitest + `vi.mock` on blob storage | The full `POST /api/convert` handler with mocked uploads | `cd api && npm test` |
 | Deployed smoke test | curl + jq inside `deploy-api.yml` | One end-to-end round-trip against the live Function App after each deploy | Fires automatically on every push to `main` |
+| End-to-end browser tests | Playwright | Drives the deployed static site through upload → convert → preview → download for representative routes, plus error handling and route-switching | Fires via `e2e.yml` after either deploy workflow succeeds; `cd e2e && SITE_URL=<url> npm test` locally |
 
 ## What the suite currently covers
 
@@ -38,7 +39,30 @@ Integration tests do not need Azurite because blob storage is mocked with `vi.mo
 
 `.github/workflows/deploy-api.yml` ends with a smoke-test step that POSTs a known payload (route `json_to_text`, a small JSON body) to `https://<function-host>/api/convert`, retries up to six times with backoff to tolerate cold-start, and fails the run if the response body is not `{ ok: true }` with the expected converted text. This exercises the full real pipeline: deployment, runtime, blob-storage binding, and CORS.
 
+## Playwright end-to-end tests
+
+Playwright lives in its own workspace at [`../e2e/`](../e2e/) so it can be installed and run independently of the API. The spec (`e2e/tests/site.spec.ts`) covers:
+
+- Four-step UI renders with correct section headings.
+- Dropdown lists exactly 10 routes.
+- The first route is pre-selected on load and the example panel is populated.
+- `json_to_text` round-trip end to end: select route, fill text, click Convert, assert preview text, assert success status.
+- Download button produces a file with the expected `.txt` extension.
+- Validation failure (invalid JSON) surfaces a structured error in the status area and hides the output section.
+- Switching routes updates the description and accepted extensions.
+
+The workflow `e2e.yml` is triggered via `workflow_run` after either `deploy-api.yml` or `deploy-site.yml` completes successfully on `main`. It reads the deployed site URL from the `AZURE_STORAGE_STATIC_WEB_URL` repository Variable and fails the run if the Variable is missing. Playwright browser binaries are cached in the runner to keep subsequent runs fast.
+
+Run locally:
+
+```bash
+cd e2e
+npm ci
+npx playwright install --with-deps chromium
+SITE_URL="https://<your-static-site>" npx playwright test
+npx playwright show-report
+```
+
 ## Outstanding work in Phase 5
 
-- **Playwright end-to-end tests** — planned. A headless browser driving the live static site against the deployed API, asserting the upload / preview / download round-trip.
 - **Azurite integration tests** — optional. A second tier of integration tests pointing at a locally-running Azurite emulator to verify the real blob-storage helper rather than only the mocked version.

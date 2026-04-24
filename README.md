@@ -23,11 +23,13 @@ The application accepts a file upload from a static web frontend, routes the upl
 ```text
 api/                     Azure Functions app (TypeScript, Node.js 22)
 site/                    Static frontend (HTML, CSS, vanilla JS)
+e2e/                     Playwright end-to-end tests against the deployed site
 legacy/                  Preserved quote-demo codebase — not deployed
   api/                   Original Functions app
   site/                  Original static site
   github-workflows-archive/  Original deploy workflows
-.github/workflows/       CI and deploy workflows for the current build
+.github/workflows/       CI, deploy, and E2E workflows for the current build
+docs/                    Architecture, cost, testing, deployment, submission
 ```
 
 ## Build status

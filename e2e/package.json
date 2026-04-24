@@ -1,0 +1,17 @@
+{
+  "name": "conversion-platform-e2e",
+  "version": "0.1.0",
+  "description": "Playwright end-to-end tests that drive the deployed static site through the full convert flow",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.19.17"
+  }
+}
