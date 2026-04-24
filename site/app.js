@@ -22,6 +22,7 @@
     elements.fileInput = $("file-input");
     elements.textInput = $("text-input");
     elements.convertButton = $("convert-button");
+    elements.sendHint = $("send-hint");
     elements.status = $("status");
     elements.outputSection = $("output-section");
     elements.outputPreview = $("output-preview");
@@ -115,7 +116,15 @@
   }
 
   function updateConvertButton() {
-    elements.convertButton.disabled = !(state.route && state.text.length > 0);
+    var ready = Boolean(state.route && state.text.length > 0);
+    elements.convertButton.disabled = !ready;
+
+    if (ready && state.filename) {
+      var derived = deriveFilenameForRoute(state.route, state.filename);
+      elements.sendHint.textContent = "Will send as: " + derived;
+    } else {
+      elements.sendHint.textContent = "";
+    }
   }
 
   function showStatus(message, kind) {
