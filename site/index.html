@@ -13,16 +13,69 @@
       <p>Upload a file, choose a conversion route, download the result.</p>
     </header>
 
-    <section id="placeholder" aria-label="Build status">
-      <p>
-        The converter UI is being scaffolded. The full upload and conversion experience
-        lands as Phase 3 is delivered. See the design documents in the repository for
-        the target behaviour.
-      </p>
+    <section aria-labelledby="route-heading">
+      <h2 id="route-heading">1. Choose a conversion</h2>
+      <label for="route">Conversion route</label>
+      <select id="route">
+        <option value="">Select a route…</option>
+      </select>
+      <p id="route-description" class="route-description" aria-live="polite"></p>
+      <details id="route-example">
+        <summary>Show example input and output</summary>
+        <div class="example">
+          <strong>Example input</strong>
+          <pre id="example-input"></pre>
+          <strong>Example output</strong>
+          <pre id="example-output"></pre>
+        </div>
+      </details>
     </section>
+
+    <section aria-labelledby="input-heading">
+      <h2 id="input-heading">2. Provide input</h2>
+      <div class="input-group">
+        <label for="file-input">Upload a file</label>
+        <input id="file-input" type="file" />
+      </div>
+      <p class="or">— or —</p>
+      <div class="input-group">
+        <label for="text-input">Paste text</label>
+        <textarea
+          id="text-input"
+          rows="8"
+          placeholder="Paste text here, or select a file above."
+          spellcheck="false"
+        ></textarea>
+      </div>
+    </section>
+
+    <section aria-labelledby="convert-heading">
+      <h2 id="convert-heading">3. Convert</h2>
+      <button id="convert-button" type="button" disabled>Convert</button>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section aria-labelledby="output-heading" id="output-section" hidden>
+      <h2 id="output-heading">4. Result</h2>
+      <pre id="output-preview"></pre>
+      <div class="output-meta">
+        <span id="output-filename"></span>
+        <span id="output-metrics"></span>
+      </div>
+      <button id="download-button" type="button">Download result</button>
+    </section>
+
+    <footer>
+      <p>
+        Academic prototype for the Serverless &amp; Cloud Platforms module.
+        Originals and converted outputs are persisted to Azure Blob Storage.
+        Downloads are generated in your browser from the API response.
+      </p>
+    </footer>
   </main>
 
   <script src="app-config.js"></script>
+  <script src="routes.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

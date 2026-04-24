@@ -15,6 +15,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Inject API base URL into app-config.js
+        env:
+          API_HOSTNAME: ${{ vars.AZURE_FUNCTIONAPP_HOSTNAME }}
+        run: |
+          if [ -z "$API_HOSTNAME" ]; then
+            echo "AZURE_FUNCTIONAPP_HOSTNAME repository Variable is not set" >&2
+            exit 1
+          fi
+          sed -i "s#__API_BASE_URL__#https://$API_HOSTNAME#g" site/app-config.js
+          if grep -q "__API_BASE_URL__" site/app-config.js; then
+            echo "API_BASE_URL placeholder was not substituted" >&2
+            exit 1
+          fi
+
       - name: Upload to $web
         uses: azure/CLI@v2
         with:
