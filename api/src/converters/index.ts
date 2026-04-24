@@ -4,5 +4,7 @@ export { jsonArrayToCsv } from "./json-array-to-csv";
 export { jsonToHtml } from "./json-to-html";
 export { jsonToKeyvalue } from "./json-to-keyvalue";
 export { jsonToText } from "./json-to-text";
+export { jsonToXml } from "./json-to-xml";
 export { listToJsonArray } from "./list-to-json-array";
 export { markdownToHtml } from "./markdown-to-html";
+export { xmlToText } from "./xml-to-text";

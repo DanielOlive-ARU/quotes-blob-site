@@ -17,6 +17,7 @@
     "@azure/storage-blob": "^12.31.0",
     "csv-parse": "^6.2.1",
     "csv-stringify": "^6.7.0",
+    "fast-xml-parser": "^5.7.1",
     "marked": "^18.0.2"
   },
   "devDependencies": {

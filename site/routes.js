@@ -74,5 +74,25 @@ window.ROUTES = [
     acceptedExtensions: [".md", ".markdown", ".txt"],
     exampleInput: "# Title\nThis is a paragraph.",
     exampleOutput: "<h1>Title</h1>\n<p>This is a paragraph.</p>"
+  },
+  {
+    key: "json_to_xml",
+    label: "JSON to XML",
+    description:
+      "Build deterministic XML from a JSON value. Default root element is 'root'. Arrays become repeated <item> children. Null values become empty elements. XML special characters are escaped automatically.",
+    acceptedExtensions: [".json"],
+    exampleInput: '{ "name": "Taylor", "course": "Cloud Platforms" }',
+    exampleOutput:
+      "<root><name>Taylor</name><course>Cloud Platforms</course></root>"
+  },
+  {
+    key: "xml_to_text",
+    label: "XML to plain text",
+    description:
+      "Summarise an XML document as plain text. If the document is <student> with <name> and <course> children, emit 'Student <name> is enrolled on <course>.'; otherwise emit a generic parse-success sentence naming the root element.",
+    acceptedExtensions: [".xml"],
+    exampleInput:
+      "<student><name>Taylor</name><course>Cloud Platforms</course></student>",
+    exampleOutput: "Student Taylor is enrolled on Cloud Platforms."
   }
 ];
