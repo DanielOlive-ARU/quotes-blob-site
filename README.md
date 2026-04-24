@@ -31,7 +31,7 @@ The converter platform is being built in the vertical slices described in `IMPLE
 - **Phase 2** — remaining backend hardening beyond the first route (error envelope refinements, logging detail). _In progress._
 - **Phase 3** — frontend UI driving `POST /api/convert` with file upload, paste mode, route-specific help, preview, and client-side download. The deploy-site workflow substitutes the Function App hostname into `site/app-config.js` at upload time so the live static site always points at the current API. _Done._
 - **Phase 4** — the full 10-route catalogue per `IMPLEMENTATION-PLAN.md` §7. _Done. All ten routes implemented: `json_to_text`, `list_to_json_array`, `form_to_json`, `json_to_keyvalue`, `csv_to_json`, `json_array_to_csv`, `json_to_html`, `markdown_to_html`, `json_to_xml`, `xml_to_text`._
-- **Phase 5** — full test harden: Vitest integration tests against Azurite, Playwright end-to-end tests, deployed smoke tests.
+- **Phase 5** — test harden. _In progress._ Vitest integration suite for `POST /api/convert` (14 handler-level tests covering happy path, validation, extension and size limits, route-specific validators, storage failure, blob-naming, and filename sanitisation) is in place with `uploadBlob` mocked so no Azurite is required. Playwright end-to-end tests and post-deploy smoke tests are still pending.
 - **Phase 6** — deploy and verify.
 
 ## Legacy code
