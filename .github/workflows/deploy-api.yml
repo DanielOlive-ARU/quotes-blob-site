@@ -45,3 +45,50 @@ jobs:
           app-name: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
           package: "api"
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+
+      - name: Post-deploy smoke test
+        env:
+          API_HOSTNAME: ${{ vars.AZURE_FUNCTIONAPP_HOSTNAME }}
+        run: |
+          set -e
+          if [ -z "$API_HOSTNAME" ]; then
+            echo "AZURE_FUNCTIONAPP_HOSTNAME repository Variable is not set" >&2
+            exit 1
+          fi
+
+          url="https://$API_HOSTNAME/api/convert"
+          body='{"route":"json_to_text","filename":"ci-smoke.json","text":"{\"status\":\"ok\",\"source\":\"ci-smoke-test\"}"}'
+          expected_converted="Status: ok"$'\n'"Source: ci-smoke-test"
+
+          max_attempts=6
+          attempt=1
+          while [ "$attempt" -le "$max_attempts" ]; do
+            echo "Smoke attempt $attempt of $max_attempts against $url"
+            response=$(curl -sS -X POST "$url" \
+              -H "content-type: application/json" \
+              --max-time 30 \
+              -d "$body" || true)
+            ok=$(echo "$response" | jq -r '.ok // false' 2>/dev/null || echo "false")
+            if [ "$ok" = "true" ]; then
+              converted=$(echo "$response" | jq -r '.converted.text' 2>/dev/null)
+              if [ "$converted" = "$expected_converted" ]; then
+                echo "Smoke test passed."
+                echo "$response" | jq '{ok, route, converted: {filename, blobName}, metrics}'
+                exit 0
+              fi
+              echo "Response ok but converted text mismatch:" >&2
+              echo "  expected: $expected_converted" >&2
+              echo "  received: $converted" >&2
+              exit 1
+            fi
+            echo "Attempt $attempt did not return ok:true. Response: $response"
+            attempt=$((attempt + 1))
+            if [ "$attempt" -le "$max_attempts" ]; then
+              sleep_for=$((attempt * 5))
+              echo "Sleeping ${sleep_for}s before next attempt..."
+              sleep "$sleep_for"
+            fi
+          done
+
+          echo "Smoke test failed after $max_attempts attempts." >&2
+          exit 1

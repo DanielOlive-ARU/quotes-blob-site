@@ -18,6 +18,41 @@ import {
 import { replaceExtension, sanitiseFilename } from "../utils/sanitise";
 import { buildBlobName, isoTimestamp } from "../utils/timestamp";
 
+type ConvertOutcome =
+  | "ok"
+  | "bad_request"
+  | "rejected"
+  | "failed"
+  | "storage_error";
+
+interface ConvertLogFields {
+  outcome: ConvertOutcome;
+  route?: string;
+  code?: string;
+  inputBytes?: number;
+  outputBytes?: number;
+  durationMs?: number;
+  message?: string;
+  details?: string;
+}
+
+function logConvertEvent(
+  context: InvocationContext,
+  level: "info" | "error",
+  fields: ConvertLogFields
+): void {
+  const payload = {
+    event: "convert",
+    invocationId: context.invocationId,
+    ...fields
+  };
+  if (level === "error") {
+    context.error(payload);
+  } else {
+    context.log(payload);
+  }
+}
+
 export async function convert(
   request: HttpRequest,
   context: InvocationContext
@@ -29,6 +64,12 @@ export async function convert(
     body = await request.json();
   } catch {
     const err = errorResponse("INVALID_INPUT", "Request body is not valid JSON.");
+    logConvertEvent(context, "info", {
+      outcome: "bad_request",
+      code: err.code,
+      message: err.message,
+      durationMs: Date.now() - startedAt
+    });
     return { status: httpStatusForError(err.code), jsonBody: err };
   }
 
@@ -39,6 +80,12 @@ export async function convert(
       shape.message ?? "Invalid request.",
       shape.details
     );
+    logConvertEvent(context, "info", {
+      outcome: "bad_request",
+      code: err.code,
+      message: err.message,
+      durationMs: Date.now() - startedAt
+    });
     return { status: httpStatusForError(err.code), jsonBody: err };
   }
   const req = shape.parsed;
@@ -50,9 +97,13 @@ export async function convert(
       routeValidation.message ?? "Validation failed.",
       routeValidation.details
     );
-    context.log(
-      `convert route=${req.route} rejected code=${err.code} message=${err.message}`
-    );
+    logConvertEvent(context, "info", {
+      outcome: "rejected",
+      route: req.route,
+      code: err.code,
+      message: err.message,
+      durationMs: Date.now() - startedAt
+    });
     return { status: httpStatusForError(err.code), jsonBody: err };
   }
 
@@ -62,6 +113,13 @@ export async function convert(
       "UNKNOWN_ROUTE",
       `Route '${req.route}' is not implemented.`
     );
+    logConvertEvent(context, "info", {
+      outcome: "rejected",
+      route: req.route,
+      code: err.code,
+      message: err.message,
+      durationMs: Date.now() - startedAt
+    });
     return { status: httpStatusForError(err.code), jsonBody: err };
   }
 
@@ -74,9 +132,14 @@ export async function convert(
       `Conversion failed for route '${req.route}'.`,
       e instanceof Error ? e.message : undefined
     );
-    context.error(
-      `convert route=${req.route} failed: ${err.details ?? err.message}`
-    );
+    logConvertEvent(context, "error", {
+      outcome: "failed",
+      route: req.route,
+      code: err.code,
+      message: err.message,
+      details: err.details,
+      durationMs: Date.now() - startedAt
+    });
     return { status: httpStatusForError(err.code), jsonBody: err };
   }
 
@@ -108,16 +171,19 @@ export async function convert(
       kind: "converted"
     });
   } catch (e) {
-    context.error(
-      `convert route=${req.route} blob upload failed: ${
-        e instanceof Error ? e.message : String(e)
-      }`
-    );
     const err = errorResponse(
       "STORAGE_ERROR",
       "Failed to persist original or converted blob.",
       e instanceof Error ? e.message : undefined
     );
+    logConvertEvent(context, "error", {
+      outcome: "storage_error",
+      route: req.route,
+      code: err.code,
+      message: err.message,
+      details: err.details,
+      durationMs: Date.now() - startedAt
+    });
     return { status: httpStatusForError(err.code), jsonBody: err };
   }
 
@@ -137,9 +203,13 @@ export async function convert(
     metrics: { durationMs, inputBytes, outputBytes }
   });
 
-  context.log(
-    `convert route=${req.route} input=${inputBytes}B output=${outputBytes}B duration=${durationMs}ms ok=true`
-  );
+  logConvertEvent(context, "info", {
+    outcome: "ok",
+    route: req.route,
+    inputBytes,
+    outputBytes,
+    durationMs
+  });
 
   return { status: 200, jsonBody: payload };
 }
