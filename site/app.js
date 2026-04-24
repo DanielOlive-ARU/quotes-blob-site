@@ -48,6 +48,12 @@
       opt.textContent = r.label;
       elements.routeSelect.appendChild(opt);
     });
+    if (routes.length > 0) {
+      elements.routeSelect.value = routes[0].key;
+      applyRoute(routes[0].key);
+    } else {
+      applyRoute("");
+    }
   }
 
   function getRoute(key) {
@@ -56,8 +62,8 @@
     });
   }
 
-  function onRouteChange(e) {
-    state.route = e.target.value || null;
+  function applyRoute(key) {
+    state.route = key || null;
     var def = state.route ? getRoute(state.route) : null;
     if (def) {
       elements.routeDescription.textContent =
@@ -66,12 +72,17 @@
       elements.exampleOutput.textContent = def.exampleOutput;
       elements.fileInput.accept = def.acceptedExtensions.join(",");
     } else {
-      elements.routeDescription.textContent = "";
+      elements.routeDescription.textContent =
+        "No conversion routes are currently available. Try reloading the page.";
       elements.exampleInput.textContent = "";
       elements.exampleOutput.textContent = "";
       elements.fileInput.removeAttribute("accept");
     }
     updateConvertButton();
+  }
+
+  function onRouteChange(e) {
+    applyRoute(e.target.value || "");
   }
 
   function onFileChange(e) {

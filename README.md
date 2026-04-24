@@ -16,6 +16,7 @@ The application accepts a file upload from a static web frontend, routes the upl
 - [`docs/cost.md`](docs/cost.md) — cost-aware design decisions and risks
 - [`docs/testing.md`](docs/testing.md) — test tiers, coverage, and how to run locally
 - [`docs/deployment.md`](docs/deployment.md) — CI/CD pipeline, secrets/variables, and manual interventions
+- [`docs/submission.md`](docs/submission.md) — pre-submission checklist and demo-day notes
 
 ## Repository layout
 
