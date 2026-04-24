@@ -134,12 +134,18 @@ Recommended success response:
 
 ```json
 {
+  "ok": true,
   "route": "json_to_xml",
-  "outputFilename": "student.xml",
-  "result": "<student><name>Jamie</name><course>Cloud Platforms</course></student>",
-  "originalBlobName": "originals/json_to_xml/20260326_120501_student.json",
-  "convertedBlobName": "converted/json_to_xml/20260326_120501_student.xml",
-  "convertedBlobUrl": "https://...sas...",
+  "original": {
+    "filename": "student.json",
+    "blobName": "originals/json_to_xml/2026-04-24T12-00-00_student.json"
+  },
+  "converted": {
+    "filename": "student.xml",
+    "contentType": "application/xml; charset=utf-8",
+    "text": "<student><name>Jamie</name><course>Cloud Platforms</course></student>",
+    "blobName": "converted/json_to_xml/2026-04-24T12-00-00_student.xml"
+  },
   "metrics": {
     "durationMs": 41,
     "inputBytes": 56,
@@ -148,15 +154,21 @@ Recommended success response:
 }
 ```
 
+Notes on the contract:
+
+- `ok` is a boolean so clients can branch on success or failure without inspecting HTTP status codes.
+- `converted.text` contains the full converted output. The browser uses this to build a client-side download (via `Blob` + object URL) and for the on-screen preview.
+- Blob names are returned for auditability and traceability only. No blob SAS URL is returned; the `files` container stays private.
+- Timestamps in blob names use the ISO-like form `YYYY-MM-DDTHH-MM-SS` so blob listings sort lexicographically.
+
 Recommended error response:
 
 ```json
 {
-  "error": {
-    "code": "INVALID_INPUT",
-    "message": "Route json_to_xml requires valid JSON input.",
-    "details": "Unexpected token } in JSON at position 18"
-  }
+  "ok": false,
+  "code": "INVALID_INPUT",
+  "message": "Route json_to_xml requires valid JSON input.",
+  "details": "Unexpected token } in JSON at position 18"
 }
 ```
 
@@ -236,6 +248,8 @@ These decisions are fixed unless a strong reason appears during implementation:
 - The API returns both preview text and a direct Azure download link.
 - One storage account is shared between the static site and the uploaded/converted files.
 - One Function App hosts a single `POST /api/convert` HTTP endpoint.
+- Downloads are performed client-side in the browser from `converted.text` in the API response. The API does not return blob SAS URLs and the `files` container stays private. This keeps blob-access capability from ever reaching the browser and removes SAS token generation from the backend.
+- Blob-name timestamps use the ISO-like form `YYYY-MM-DDTHH-MM-SS` so blob listings sort in upload order.
 - Legacy quote-demo code is preserved in `legacy/` for evidence but never executed or deployed.
 
 ## 9. Lessons Carried Forward From The Legacy Code
@@ -279,7 +293,6 @@ Function App application settings used by the new converter API (names chosen to
 - `FILES_STORAGE` — Azure Storage connection string (required)
 - `FILES_CONTAINER` — target container name (optional; defaults to `files` in code)
 - `MAX_INPUT_BYTES` — per-request input size limit in bytes (optional; defaults to `200000` in code)
-- `SAS_EXPIRY_MINUTES` — SAS download token lifetime (optional; defaults to `60` in code)
 
 The Function App also has `AzureWebJobsStorage`, which Azure configures for the runtime. That is independent of `FILES_STORAGE` and is not used by the application code.
 
@@ -300,7 +313,7 @@ User owns:
 - GitHub repository management
 - repository secrets and variables in GitHub
 - any re-runs of failed deployments caused by cloud configuration or permissions
-- verification that optional Function App application settings (`MAX_INPUT_BYTES`, `SAS_EXPIRY_MINUTES`) are present if non-default values are required
+- verification that the optional Function App application setting `MAX_INPUT_BYTES` is present if a non-default value is required
 
 ## 12. Definition Of Success
 

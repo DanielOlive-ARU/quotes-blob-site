@@ -37,8 +37,7 @@ This sequence reduces rework and gives a working system early.
   - example/help panel
   - convert button
   - preview area
-  - browser download button
-  - Azure SAS download link
+  - browser download button (client-side, generated from `converted.text` in the API response — no SAS URL)
   - status/error area
 
 ### Backend
@@ -105,9 +104,8 @@ Function App application settings the new API relies on (names reuse existing le
 - `FILES_STORAGE` — storage connection string (required; already present)
 - `FILES_CONTAINER` — defaults to `files` if absent (optional)
 - `MAX_INPUT_BYTES` — defaults to `200000` in code if absent (optional)
-- `SAS_EXPIRY_MINUTES` — defaults to `60` in code if absent (optional)
 
-Actual resource names (storage account, resource group, Function App name) are confidential and are referenced only via GitHub Secrets in workflows. They must not be committed to the repo in any form.
+Actual resource names (storage account, resource group, Function App name) are confidential and are referenced only via GitHub Secrets (for storage account, publish profile, SAS for `$web` upload) and GitHub Variables (for the Function App name) in workflows. They must not be committed to the repo in any form.
 
 ## 6. GitHub Configuration
 
@@ -159,8 +157,8 @@ Deliverable: one working route end to end, preferably `json_to_text`.
 - validation pipeline
 - converter registry
 - blob storage helper (reading `FILES_STORAGE` / `FILES_CONTAINER`)
-- SAS URL generation
-- timing and byte metrics
+- structured Application Insights logging per request (route, input bytes, output bytes, duration, outcome code)
+- timing and byte metrics returned in the response body
 
 Deliverable: successful local conversion and storage with one route.
 
@@ -171,8 +169,7 @@ Deliverable: successful local conversion and storage with one route.
 - route dropdown
 - example text area
 - output preview
-- browser download
-- Azure download link
+- browser download (client-side Blob + object URL from the returned `converted.text`)
 - route-specific validation feedback
 
 Deliverable: one full route working in browser against local Functions host.
@@ -194,11 +191,19 @@ Implement in this order:
 
 ### Phase 5. Test and harden
 
-- unit tests for all converters
-- routing and validation tests
-- utility tests
-- Azurite integration tests
-- deployed smoke tests
+Test tiers and tooling:
+
+- **Unit tests (Vitest)** — every converter, route registry lookups, validation helpers, sanitisation helpers, content-type helpers.
+- **Integration tests (Vitest + Azurite)** — the `POST /api/convert` handler against a locally-running Azurite emulator. Azurite is added as a dev dependency and started in CI as a background process; tests point `FILES_STORAGE=UseDevelopmentStorage=true`.
+- **End-to-end tests (Playwright)** — drive the static site in a headless browser against the local Functions host, upload a representative file per route, assert the preview matches the expected output and the client-side download produces the correct filename. Run against the local stack in CI; optionally re-run against the deployed URLs as a post-deploy smoke step.
+- **Deployed smoke tests** — a small Playwright or script-level test that hits the public site URL and the deployed Function App's `/api/convert` after each successful deployment. Confirms the deployed pipeline actually works.
+
+Coverage targets:
+
+- each converter has at least the 3-test matrix described in `JSON-XML-MVP-PLAN.md` §5
+- every route has one integration test through the real `/api/convert` handler
+- at least one end-to-end test exists per conversion format family (JSON-in, JSON-out, CSV-in/out, text-in, XML-in/out, Markdown)
+- every API response path (success and each error code) is covered at either integration or unit level
 
 ### Phase 6. Deploy and verify
 
@@ -278,7 +283,6 @@ Recommended API local settings (`api/local.settings.json`):
 - `FILES_STORAGE=UseDevelopmentStorage=true`
 - `FILES_CONTAINER=files`
 - `MAX_INPUT_BYTES=200000`
-- `SAS_EXPIRY_MINUTES=60`
 
 `local.settings.json` must remain gitignored.
 
@@ -312,7 +316,15 @@ Before submission:
   - live conversion in browser
 - tag the final commit or create a release for presentation stability
 
-## 12. Official Reference Links
+## 12. Out Of Scope For This Iteration
+
+These are deliberate omissions, flagged so the presentation can defend them as decisions rather than gaps:
+
+- **Asynchronous processing path.** The assignment rubric lists async for longer conversions at the MAY tier. All 10 targeted routes are synchronous text conversions that complete in milliseconds, so a queue-backed async pipeline adds cost and complexity without a real-world trigger. Revisit if later work adds a conversion that actually benefits (e.g. image or PDF processing).
+- **Public blob SAS URLs.** Downloads are client-side from `converted.text` in the API response, so the `files` container can remain private and no blob-access tokens ever reach the browser. SAS generation logic, SAS expiry configuration, and the associated threat surface are all deliberately absent.
+- **Authentication, accounts, billing, rate limiting.** Not required by the assignment brief and explicitly out of scope per `ASSIGNMENT-CONTEXT.md` §3.
+
+## 13. Official Reference Links
 
 - Azure Functions with GitHub Actions:
   - `https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-github-actions`
@@ -320,5 +332,13 @@ Before submission:
   - `https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-static-website-how-to`
 - Azure Functions security and CORS guidance:
   - `https://learn.microsoft.com/en-us/azure/azure-functions/security-concepts`
-- GitHub Actions secrets:
+- GitHub Actions secrets and variables:
   - `https://docs.github.com/actions/security-guides/encrypted-secrets`
+  - `https://docs.github.com/actions/learn-github-actions/variables`
+- Azurite local storage emulator:
+  - `https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite`
+- Playwright end-to-end testing:
+  - `https://playwright.dev/docs/intro`
+  - `https://github.com/microsoft/playwright-github-action`
+- Application Insights for Azure Functions:
+  - `https://learn.microsoft.com/en-us/azure/azure-functions/functions-monitoring`
