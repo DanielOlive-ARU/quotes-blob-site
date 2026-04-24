@@ -29,7 +29,7 @@ app.http("quote", {
      }
 
      const quote = quotes[Math.floor(Math.random() * quotes.length)];
-     return { status: 200, jsonBody: { quote } };
+     return { status: 200, jsonBody: { quote, deployTest: "api-v1" } };
    } catch (err: any) {
      return { status: 500, jsonBody: { error: String(err?.message ?? err) } };
    }
