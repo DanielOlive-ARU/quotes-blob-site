@@ -62,8 +62,8 @@ export const jsonToText: RouteDefinition = {
   acceptedMimeTypes: ["application/json"],
   outputExtension: ".txt",
   outputMimeType: TEXT_PLAIN,
-  exampleInput: '{ "name": "Jamie", "course": "Cloud Platforms", "level": 5 }',
-  exampleOutput: "Name: Jamie\nCourse: Cloud Platforms\nLevel: 5",
+  exampleInput: '{ "name": "Student One", "course": "Cloud Platforms", "level": 5 }',
+  exampleOutput: "Name: Student One\nCourse: Cloud Platforms\nLevel: 5",
   validate,
   convert
 };

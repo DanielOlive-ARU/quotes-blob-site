@@ -4,9 +4,9 @@ import { jsonToText } from "../../../src/converters/json-to-text";
 describe("jsonToText converter", () => {
   describe("convert", () => {
     it("produces Key: Value lines for a flat object (happy path)", () => {
-      const input = '{"name":"Jamie","course":"Cloud Platforms","level":5}';
+      const input = '{"name":"Student One","course":"Cloud Platforms","level":5}';
       expect(jsonToText.convert(input)).toBe(
-        "Name: Jamie\nCourse: Cloud Platforms\nLevel: 5"
+        "Name: Student One\nCourse: Cloud Platforms\nLevel: 5"
       );
     });
 
@@ -16,9 +16,9 @@ describe("jsonToText converter", () => {
     });
 
     it("JSON-stringifies nested values", () => {
-      const input = '{"name":"Jamie","tags":["a","b"],"meta":{"x":1}}';
+      const input = '{"name":"Student One","tags":["a","b"],"meta":{"x":1}}';
       expect(jsonToText.convert(input)).toBe(
-        'Name: Jamie\nTags: ["a","b"]\nMeta: {"x":1}'
+        'Name: Student One\nTags: ["a","b"]\nMeta: {"x":1}'
       );
     });
 

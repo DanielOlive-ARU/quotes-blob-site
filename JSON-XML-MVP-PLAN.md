@@ -118,7 +118,7 @@ Conversion policy:
 Example output:
 
 ```text
-Name: Jamie
+Name: Student One
 Course: Cloud Platforms
 Level: 5
 ```
@@ -188,7 +188,7 @@ Conversion policy:
 Example output:
 
 ```json
-{ "name": "Jamie", "course": "Cloud Platforms", "level": "5" }
+{ "name": "Student One", "course": "Cloud Platforms", "level": "5" }
 ```
 
 ## 3.5 `json_array_to_csv`
@@ -260,7 +260,7 @@ Conversion policy:
 Example output:
 
 ```json
-{ "name": "Jamie", "course": "Cloud Platforms", "level": "5" }
+{ "name": "Student One", "course": "Cloud Platforms", "level": "5" }
 ```
 
 ## 3.7 `json_to_keyvalue`
@@ -295,7 +295,7 @@ Conversion policy:
 Example output:
 
 ```text
-name=Jamie
+name=Student One
 city=Peterborough
 ```
 
@@ -332,7 +332,7 @@ Conversion policy:
 Example output:
 
 ```text
-Student Jamie is enrolled on Cloud Platforms.
+Student Taylor is enrolled on Cloud Platforms.
 ```
 
 ## 3.9 `markdown_to_html`
@@ -404,7 +404,7 @@ Conversion policy:
 Example output:
 
 ```xml
-<student><name>Jamie</name><course>Cloud Platforms</course></student>
+<student><name>Student One</name><course>Cloud Platforms</course></student>
 ```
 
 ## 4. Output Extension Map

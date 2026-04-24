@@ -123,7 +123,7 @@ Recommended request body:
 {
   "filename": "student.json",
   "route": "json_to_xml",
-  "text": "{ \"name\": \"Jamie\", \"course\": \"Cloud Platforms\" }",
+  "text": "{ \"name\": \"Student One\", \"course\": \"Cloud Platforms\" }",
   "options": {
     "rootElement": "student"
   }
@@ -143,7 +143,7 @@ Recommended success response:
   "converted": {
     "filename": "student.xml",
     "contentType": "application/xml; charset=utf-8",
-    "text": "<student><name>Jamie</name><course>Cloud Platforms</course></student>",
+    "text": "<student><name>Student One</name><course>Cloud Platforms</course></student>",
     "blobName": "converted/json_to_xml/2026-04-24T12-00-00_student.xml"
   },
   "metrics": {
