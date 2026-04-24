@@ -24,7 +24,15 @@ legacy/                  Preserved quote-demo codebase — not deployed
 
 ## Build status
 
-The converter platform is being built in the vertical slices described in `IMPLEMENTATION-PLAN.md` §1. Phase 0 (initial scaffolding) establishes the repo shape and a placeholder `POST /api/convert` endpoint. Further phases add the shared route contract, real converters, the frontend UI, tests, and deployment hardening.
+The converter platform is being built in the vertical slices described in `IMPLEMENTATION-PLAN.md` §1.
+
+- **Phase 0** — initial scaffolding, `.github/workflows/`, and repo shape. _Done._
+- **Phase 1** — shared contract types, route registry, validation pipeline, blob storage helper, timestamp/filename utilities, and the first converter (`json_to_text`) wired through `POST /api/convert` end to end on the backend, plus unit tests for the converter, validation, timestamp, and filename sanitiser. _Done._
+- **Phase 2** — remaining backend hardening beyond the first route (error envelope refinements, logging detail). _In progress._
+- **Phase 3** — frontend UI driving `POST /api/convert` with file upload, paste mode, preview, and client-side download. _Pending._
+- **Phase 4** — the remaining 9 routes, in the order listed in `IMPLEMENTATION-PLAN.md` §7.
+- **Phase 5** — full test harden: Vitest integration tests against Azurite, Playwright end-to-end tests, deployed smoke tests.
+- **Phase 6** — deploy and verify.
 
 ## Legacy code
 

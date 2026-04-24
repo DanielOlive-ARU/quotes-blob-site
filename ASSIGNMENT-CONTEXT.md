@@ -245,9 +245,9 @@ These decisions are fixed unless a strong reason appears during implementation:
 - Filename-based routing is rejected.
 - The frontend supports both file upload and paste input, but file upload remains the default path because the assignment explicitly asks for file upload.
 - Blob names are timestamped and route-aware.
-- The API returns both preview text and a direct Azure download link.
 - One storage account is shared between the static site and the uploaded/converted files.
 - One Function App hosts a single `POST /api/convert` HTTP endpoint.
+- `POST /api/convert` is intentionally anonymous (`authLevel: "anonymous"`). Function-level keys would offer no real defence for a browser-called API because any key has to be embedded in client-side code where any visitor can read it, and user authentication is explicitly out of scope per §3 of this document. The endpoint is hardened by the `MAX_INPUT_BYTES` per-request input cap, structured request validation, and a private `files` container that is never exposed to the public internet. Rate limiting, abuse monitoring, and richer mitigations are noted as future work.
 - Downloads are performed client-side in the browser from `converted.text` in the API response. The API does not return blob SAS URLs and the `files` container stays private. This keeps blob-access capability from ever reaching the browser and removes SAS token generation from the backend.
 - Blob-name timestamps use the ISO-like form `YYYY-MM-DDTHH-MM-SS` so blob listings sort in upload order.
 - Legacy quote-demo code is preserved in `legacy/` for evidence but never executed or deployed.
