@@ -19,16 +19,18 @@ Work through this checklist once before submitting. Every item is quick. The goa
 ## 3. Verify GitHub Actions
 
 - [ ] On GitHub, open the **Actions** tab.
-- [ ] The most recent runs of `ci.yml`, `deploy-api.yml`, and `deploy-site.yml` should all be green.
+- [ ] The most recent runs of `ci.yml`, `deploy-api.yml`, `deploy-site.yml`, and `e2e.yml` should all be green.
 - [ ] Open the most recent `deploy-api.yml` run and expand the **Post-deploy smoke test** step. It should show the response body with `"ok": true`.
+- [ ] Open the most recent `e2e.yml` run, scroll to the bottom of the run summary, and download the `playwright-report` artifact. All seven tests should be green.
 
 ## 4. Capture screenshots
 
 Save in a folder you will attach to the submission document (e.g. `evidence/`):
 
 - [ ] GitHub repository front page (README visible)
-- [ ] GitHub **Actions** tab showing all three workflows green
+- [ ] GitHub **Actions** tab showing all four workflows green
 - [ ] Most recent `deploy-api.yml` run with the smoke-test step expanded
+- [ ] Most recent `e2e.yml` run summary, plus optionally a screenshot of the downloaded Playwright HTML report
 - [ ] Azure Portal → Function App → **Overview** (Status: Running)
 - [ ] Azure Portal → Storage account → **Containers** (`$web` and `files` visible)
 - [ ] `files` container showing populated `originals/` and `converted/` prefixes
@@ -63,7 +65,7 @@ These are the pieces of evidence this repo makes easy to demonstrate live:
 
 - **Cloud-hosted static site** — open the live URL.
 - **Serverless backend** — Azure Portal → Function App → Overview.
-- **CI/CD pipeline** — GitHub Actions tab, show the three workflows.
+- **CI/CD pipeline** — GitHub Actions tab, show the four workflows (`ci.yml`, `deploy-api.yml`, `deploy-site.yml`, `e2e.yml`).
 - **Modular serverless design** — `api/src/converters/` (one file per route), then `api/src/routing/route-metadata.ts` (single registry).
 - **Testing** — run `cd api && npm test` live; show the 124 passing tests.
 - **Cost-aware decisions** — `docs/cost.md`.
@@ -76,7 +78,7 @@ Suggested demo order:
 1. Problem + architecture diagram (`docs/architecture.md`).
 2. Repo tour: `api/`, `site/`, `legacy/`, `docs/`.
 3. Live UI: one round-trip (the "it works" moment).
-4. CI/CD: workflows, smoke test, test run.
+4. CI/CD: workflows, post-deploy smoke test, Playwright E2E run, local Vitest test run.
 5. Architectural decisions: anonymous endpoint + private storage, client-side download, one storage account, synchronous design.
 6. Cost story: `docs/cost.md`.
 7. Deliberate omission: async processing and why.

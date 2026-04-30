@@ -4,12 +4,12 @@
 
 Two deploy workflows push the project to Azure from GitHub Actions.
 
-| Workflow | Triggered by | Deploys to |
+| Workflow | Triggered by | Action |
 |---|---|---|
-| `deploy-api.yml` | changes under `api/**` or the workflow file itself | Azure Functions app |
-| `deploy-site.yml` | changes under `site/**` or the workflow file itself | `$web` container on the Azure Storage static website |
-
-Both workflows run only on pushes to `main`. A third workflow (`ci.yml`) runs build and tests on every push and pull request to `main` but does not deploy.
+| `ci.yml` | every push and pull request to `main` | Build and run the full Vitest unit + integration suite (124 tests). Does not deploy. |
+| `deploy-api.yml` | changes under `api/**` or the workflow file itself, on `main` | Build, test, prune, deploy to Azure Functions, then run an inline post-deploy smoke test against the live endpoint. |
+| `deploy-site.yml` | changes under `site/**` or the workflow file itself, on `main` | Inject the Function App hostname into `site/app-config.js`, then upload `site/` to the `$web` container. |
+| `e2e.yml` | `workflow_run` after `deploy-api.yml` or `deploy-site.yml` completes successfully on `main`; also `workflow_dispatch` for manual re-runs | Run Playwright in headless Chromium against the live deployed static site. Upload the HTML report on every run; upload traces and screenshots only on failure. |
 
 ## Secrets and variables
 
@@ -21,7 +21,8 @@ Configured in GitHub under **Settings -> Secrets and variables -> Actions**.
 | `AZURE_STORAGE_ACCOUNT` | Secret | Target storage account name for the `$web` site upload |
 | `AZURE_STORAGE_SAS_TOKEN` | Secret | Short-lived SAS for the site upload |
 | `AZURE_FUNCTIONAPP_NAME` | Variable | Function App resource name, passed to the deploy action as `app-name` |
-| `AZURE_FUNCTIONAPP_HOSTNAME` | Variable | Public hostname of the Function App, used by the site deploy to substitute the API base URL into `app-config.js` and by the smoke-test step to call the live endpoint |
+| `AZURE_FUNCTIONAPP_HOSTNAME` | Variable | Public hostname of the Function App (long-form including the random Azure suffix and region slot). Used by the site deploy to substitute the API base URL into `app-config.js` and by the smoke-test step to call the live endpoint |
+| `AZURE_STORAGE_STATIC_WEB_URL` | Variable | Public URL of the deployed static site, scheme included with no trailing slash. Used by `e2e.yml` to point Playwright at the live site |
 
 Actual resource names are never committed to the repository; they live only in these Secrets/Variables.
 
@@ -45,6 +46,13 @@ Actual resource names are never committed to the repository; they live only in t
 ### `ci.yml`
 
 Runs on every push and pull request to `main`. Executes `npm ci`, `npm run build`, and `npm test`. Does not deploy.
+
+### `e2e.yml`
+
+1. `workflow_run` listener on `deploy-api.yml` and `deploy-site.yml`; runs only when the upstream conclusion was success.
+2. Checkout, set up Node.js 22, `npm ci` in `e2e/`, then cache and install Playwright browsers.
+3. Run `npx playwright test` against `${{ vars.AZURE_STORAGE_STATIC_WEB_URL }}`. Fails fast if the Variable is missing.
+4. Upload the HTML report as a `playwright-report` artifact on every run, and traces/screenshots on failure only.
 
 ## Manual interventions
 

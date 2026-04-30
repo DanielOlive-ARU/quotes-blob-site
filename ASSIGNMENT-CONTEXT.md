@@ -68,11 +68,10 @@ It does not need authentication, billing, user accounts, or polished enterprise 
 - Storage: one Azure Storage account (already provisioned)
 - Static site hosting: Azure Blob Storage static website using the `$web` container (already configured)
 - File persistence: same storage account, separate `files` container with blob path prefixes (already exists)
-- CI/CD: GitHub Actions
-- Testing: Vitest for unit tests and integration tests
-- Local storage emulation: Azurite
+- CI/CD: GitHub Actions (4 workflows)
+- Testing: Vitest for unit and integration tests with `vi.mock` against the blob-storage helper; Playwright for end-to-end browser tests; curl + jq inline post-deploy smoke test in the API deploy workflow
 
-Supporting packages (the existing `api/package.json` already depends on `@azure/functions`, `@azure/storage-blob`, `vitest`, and `typescript`):
+Runtime packages (`api/package.json`):
 
 - `@azure/functions`
 - `@azure/storage-blob`
@@ -80,9 +79,14 @@ Supporting packages (the existing `api/package.json` already depends on `@azure/
 - `marked`
 - `csv-parse`
 - `csv-stringify`
-- `vitest`
-- `azurite`
+
+Dev / build packages:
+
 - `typescript`
+- `vitest`
+- `rimraf`
+- `@types/node`
+- `@playwright/test` (in `e2e/package.json`)
 
 ## 5. Core Architecture
 
@@ -96,7 +100,7 @@ Azure Function App
   -> execute converter from registry
   -> write original file to Blob Storage
   -> write converted file to Blob Storage
-  -> return converted text, blob names, and SAS download URL
+  -> return converted text and blob names (no SAS — container stays private)
 Azure Blob Storage
   -> $web container for frontend
   -> files container for originals/converted results
@@ -180,7 +184,8 @@ Recommended error response:
 │   └── workflows/
 │       ├── ci.yml
 │       ├── deploy-api.yml
-│       └── deploy-site.yml
+│       ├── deploy-site.yml
+│       └── e2e.yml
 ├── api/
 │   ├── src/
 │   │   ├── index.ts
@@ -213,24 +218,33 @@ Recommended error response:
 │   │   └── integration/
 │   ├── package.json
 │   ├── tsconfig.json
-│   ├── vitest.config.ts
-│   └── host.json
+│   ├── host.json
+│   └── .funcignore
 ├── site/
 │   ├── index.html
 │   ├── app.js
+│   ├── routes.js
 │   ├── styles.css
 │   └── app-config.js
+├── e2e/
+│   ├── tests/
+│   │   └── site.spec.ts
+│   ├── package.json
+│   ├── playwright.config.ts
+│   └── tsconfig.json
 ├── legacy/
 │   ├── api/
 │   ├── site/
 │   └── github-workflows-archive/
 ├── docs/
 │   ├── architecture.md
+│   ├── cost.md
 │   ├── deployment.md
-│   ├── routes.md
+│   ├── submission.md
 │   └── testing.md
 ├── .gitattributes
 ├── .gitignore
+├── README.md
 ├── ASSIGNMENT-CONTEXT.md
 ├── IMPLEMENTATION-PLAN.md
 └── JSON-XML-MVP-PLAN.md
@@ -262,7 +276,7 @@ These decisions are fixed unless a strong reason appears during implementation:
 - Keep environment variable names explicit and documented.
 - Expect Azure Functions cold starts on Consumption.
 - Expect CORS setup to be required for the static site origin.
-- Prefer direct blob download via SAS instead of proxying downloads through the Function App.
+- Generate downloads client-side from the API response rather than via blob SAS URLs — the blob container can stay private and no access tokens reach the browser.
 
 ## 10. Azure Resource Reuse
 
@@ -323,12 +337,12 @@ The project is ready for submission when all of the following are true:
 - all 10 routes are available in the deployed frontend
 - upload and conversion both work from the browser
 - original and converted blobs are written to Azure Storage
-- converted output can be downloaded in-browser and from Azure
-- CI runs automatically from GitHub
+- converted output is downloaded in the browser as a client-side blob
+- CI runs automatically from GitHub on every push and pull request
 - API and site both deploy automatically from GitHub Actions
-- unit tests pass
-- at least one local integration suite passes with Azurite
-- a deployed smoke test succeeds against the live Function App
+- the full Vitest unit + integration suite passes (124 tests)
+- the post-deploy smoke test in `deploy-api.yml` succeeds against the live Function App after every API deploy
+- the Playwright E2E suite (`e2e.yml`) succeeds against the deployed static site after every deploy
 - the legacy code under `legacy/` remains recoverable from git history
 
 ## 13. Starting Assumption For Future AI Sessions

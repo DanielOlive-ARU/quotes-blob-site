@@ -455,8 +455,8 @@ The frontend should also:
 - validate file extension before submission when a file is uploaded
 - allow paste mode for quick demo input
 - show the route key returned by the API
-- show blob paths returned by the API
-- show both browser download and Azure download options
+- show blob paths returned by the API for traceability
+- generate the converted file as a client-side `Blob` download from the API response (no SAS URL, no Azure-direct download link)
 
 ## 7. Future Expansion Rules
 

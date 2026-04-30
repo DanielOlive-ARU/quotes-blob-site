@@ -117,8 +117,9 @@ Actual resource names (storage account, resource group, Function App name) are c
 
 ### Repository variables in use
 
-- `AZURE_FUNCTIONAPP_NAME` — Function App name, kept as a repository Variable rather than a Secret because the Function App hostname is already public in the Azure-assigned URL. Required — the user must add it under `Settings -> Secrets and variables -> Actions -> Variables` before the new `deploy-api.yml` is pushed; otherwise the deploy step will fail with an empty `app-name`.
-- `AZURE_STORAGE_STATIC_WEB_URL` — for documentation / smoke-test references (optional)
+- `AZURE_FUNCTIONAPP_NAME` — Function App resource name used by `Azure/functions-action@v1` as `app-name`. Repository Variable rather than Secret because the Function App resource name is already public in the Azure-assigned hostname. Required.
+- `AZURE_FUNCTIONAPP_HOSTNAME` — the public hostname of the Function App (the long form including the random Azure suffix and region slot). Used by `deploy-site.yml` to substitute the API base URL into `site/app-config.js` at upload time, and by the `deploy-api.yml` smoke-test step to call the live endpoint. Required.
+- `AZURE_STORAGE_STATIC_WEB_URL` — the deployed static-site URL with scheme and no trailing slash. Used by `e2e.yml` to point Playwright at the live site. Required for the E2E workflow to run; the workflow fails fast if absent.
 
 ### Branch protection
 
@@ -208,16 +209,18 @@ Coverage targets:
 ### Phase 6. Deploy and verify
 
 - `ci.yml`
-- `deploy-api.yml` (reads `AZURE_FUNCTIONAPP_NAME` from repository Variables)
-- `deploy-site.yml` (reads `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_SAS_TOKEN` from secrets — existing pattern)
+- `deploy-api.yml` (reads `AZURE_FUNCTIONAPP_NAME` from repository Variables; ends with an inline post-deploy smoke test that POSTs to the live endpoint and fails the run if the response is wrong)
+- `deploy-site.yml` (reads `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_SAS_TOKEN` from Secrets; substitutes `AZURE_FUNCTIONAPP_HOSTNAME` into `site/app-config.js` before upload)
+- `e2e.yml` (Playwright against the deployed site; triggered by `workflow_run` after either deploy completes successfully)
 - deployment notes in `docs/deployment.md`
 
 User then:
 
 - pushes to GitHub
 - verifies `ci` passes
-- verifies API deployment runs
+- verifies API deployment runs and the smoke test step is green
 - verifies site deployment runs
+- verifies the post-deploy `e2e.yml` run is green
 - tests the live site and Function App
 
 ## 8. Workflow Design
@@ -231,10 +234,9 @@ Trigger:
 
 Run:
 
-- install dependencies
-- build API
-- run unit tests
-- run integration tests if Azurite is included in CI
+- install dependencies (`npm ci` against `api/package-lock.json`)
+- build API with `tsc`
+- run the full Vitest suite (unit + integration)
 
 ### `deploy-api.yml`
 
@@ -251,8 +253,9 @@ Run:
 - install
 - build
 - test
-- prune dev dependencies if needed
+- prune dev dependencies
 - deploy with `Azure/functions-action@v1` using `${{ vars.AZURE_FUNCTIONAPP_NAME }}` as the target app
+- **Post-deploy smoke test**: POST a known payload to `https://${{ vars.AZURE_FUNCTIONAPP_HOSTNAME }}/api/convert` with retry-on-cold-start (up to six attempts with backoff). Fails the run if the response is not `{ ok: true }` with the expected converted text.
 
 ### `deploy-site.yml`
 
@@ -265,22 +268,41 @@ Trigger:
 Run:
 
 - checkout
-- optional HTML/CSS/JS validation step
-- upload `site/` contents to `$web` using `${{ secrets.AZURE_STORAGE_ACCOUNT }}` and `${{ secrets.AZURE_STORAGE_SAS_TOKEN }}`
+- **Inject API base URL**: substitute the `__API_BASE_URL__` placeholder in `site/app-config.js` with `https://${{ vars.AZURE_FUNCTIONAPP_HOSTNAME }}`. Fails fast if the Variable is missing or the placeholder is not replaced.
+- upload `site/` contents to `$web` using `${{ secrets.AZURE_STORAGE_ACCOUNT }}` and `${{ secrets.AZURE_STORAGE_SAS_TOKEN }}` with `--overwrite true`
+
+### `e2e.yml`
+
+Trigger:
+
+- `workflow_run` after `deploy-api.yml` or `deploy-site.yml` completes successfully on `main`
+- `workflow_dispatch` for manual re-runs
+
+Run:
+
+- checkout
+- setup Node 22
+- `npm ci` in `e2e/`
+- cache Playwright browser binaries keyed on `e2e/package-lock.json`
+- install Playwright browsers if cache missed
+- run Playwright against `${{ vars.AZURE_STORAGE_STATIC_WEB_URL }}`; fails fast if the Variable is missing
+- upload the HTML report as an artifact on every run; upload traces and screenshots only on failure
 
 ## 9. Local Development Flow
 
 Recommended local loop:
 
-1. run Azurite if integration tests need it
-2. run the Functions API locally
-3. serve the `site/` folder locally
-4. test browser flow
-5. run unit tests before commit
+1. run the Functions API locally (`cd api && npm start`)
+2. serve the `site/` folder locally (e.g. `npx serve site` or VS Code Live Server)
+3. test the browser flow against the local API
+4. run unit + integration tests before commit (`cd api && npm test`)
+5. optionally run the Playwright E2E suite against the deployed site (`cd e2e && SITE_URL=<live-url> npx playwright test`)
+
+The integration tests use `vi.mock` against the blob-storage helper, so Azurite is not required for the test suite to pass.
 
 Recommended API local settings (`api/local.settings.json`):
 
-- `FILES_STORAGE=UseDevelopmentStorage=true`
+- `FILES_STORAGE=UseDevelopmentStorage=true` — only needed if you want the local handler to write real blobs; tests do not need it
 - `FILES_CONTAINER=files`
 - `MAX_INPUT_BYTES=200000`
 

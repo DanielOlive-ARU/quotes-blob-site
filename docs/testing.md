@@ -11,12 +11,16 @@
 
 ## What the suite currently covers
 
-- **Converters** — ten files under `api/src/converters/`, each with a validate-happy-path test, a validate-reject test, and at least one edge case (URL-encoded input, quoted CSV, null handling, XML entity escaping, etc.).
-- **Routing** — request-shape validation, route existence, extension match, empty input, and `MAX_INPUT_BYTES` override.
-- **Utilities** — ISO timestamp formatting and blob-path assembly, filename sanitisation and extension replacement.
-- **HTTP handler** — happy path for `json_to_text`, all six request-level rejection codes, route-specific rejections, two separate storage-failure paths, metrics population, shared-timestamp invariant, and filename sanitisation in the response shape.
+Current totals: **124 Vitest tests** (110 unit + 14 integration) across 14 test files, plus **7 Playwright E2E scenarios** and **1 post-deploy smoke check**. Every commit runs all 124 Vitest tests in CI; every successful deploy runs the smoke + Playwright passes.
 
-See `api/tests/` for the tree. Coverage targets are defined in [`../IMPLEMENTATION-PLAN.md`](../IMPLEMENTATION-PLAN.md) §7 Phase 5.
+- **Converters (Vitest unit)** — ten files under `api/src/converters/`, each with a validate-happy-path test, a validate-reject test, and at least one edge case (URL-encoded input, quoted CSV, null handling, XML entity escaping, etc.).
+- **Routing (Vitest unit)** — request-shape validation, route existence, extension match, empty input, and `MAX_INPUT_BYTES` override.
+- **Utilities (Vitest unit)** — ISO timestamp formatting and blob-path assembly, filename sanitisation and extension replacement.
+- **HTTP handler (Vitest integration)** — happy path for `json_to_text`, all six request-level rejection codes, route-specific rejections, two separate storage-failure paths, metrics population, shared-timestamp invariant, and filename sanitisation in the response shape.
+- **Browser end-to-end (Playwright)** — UI render, dropdown count, first-route pre-selection + example panel, full `json_to_text` round-trip, download filename, validation-failure error surfacing, and route-switch updating the description.
+- **Live infrastructure (smoke)** — POST a known payload to `/api/convert` after every deploy, retry-on-cold-start, fail the run if the response is wrong.
+
+See `api/tests/` and `e2e/tests/` for the trees. Coverage targets are defined in [`../IMPLEMENTATION-PLAN.md`](../IMPLEMENTATION-PLAN.md) §7 Phase 5.
 
 ## Running locally
 
@@ -63,6 +67,9 @@ SITE_URL="https://<your-static-site>" npx playwright test
 npx playwright show-report
 ```
 
-## Outstanding work in Phase 5
+## Optional future test additions
 
-- **Azurite integration tests** — optional. A second tier of integration tests pointing at a locally-running Azurite emulator to verify the real blob-storage helper rather than only the mocked version.
+These are deliberately not implemented but would be straightforward extensions:
+
+- **Azurite-backed integration tests** — a second tier of integration tests pointing at a locally-running Azurite emulator to verify the real `uploadBlob` helper end to end, in addition to the current mocked-storage tests.
+- **Cross-browser Playwright** — currently only Chromium. Adding Firefox and WebKit projects to `playwright.config.ts` is a few lines of config; the trade-off is roughly 3× CI time and 3× browser-binary cache size.
